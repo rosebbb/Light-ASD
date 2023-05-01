@@ -19,7 +19,7 @@ class ASD_Model(nn.Module):
         x = self.visualEncoder(x)
         return x
 
-    def forward_audio_frontend(self, x):    
+    def forward_audio_frontend(self, x):   
         x = x.unsqueeze(1).transpose(2, 3)     
         x = self.audioEncoder(x)
         return x

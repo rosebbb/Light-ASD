@@ -8,7 +8,7 @@ def main():
     # This code is modified based on this [repository](https://github.com/TaoRuijie/TalkNet-ASD).
     warnings.filterwarnings("ignore")
 
-    parser = argparse.ArgumentParser(description = "Model Training")
+    parser = argparse.ArgumentParser(description = "Light ASD Training")
     # Training details
     parser.add_argument('--lr',           type=float, default=0.001, help='Learning rate')
     parser.add_argument('--lrDecay',      type=float, default=0.95,  help='Learning rate decay rate')
@@ -17,21 +17,28 @@ def main():
     parser.add_argument('--batchSize',    type=int,   default=2000,  help='Dynamic batch size, default is 2000 frames')
     parser.add_argument('--nDataLoaderThread', type=int, default=64,  help='Number of loader threads')
     # Data path
-    parser.add_argument('--dataPathAVA',  type=str, default="AVADataPath", help='Save path of AVA dataset')
+    parser.add_argument('--dataPathAVA',  type=str, default="/home/xingliu/Datasets/AVADataPath", help='Save path of AVA dataset')
     parser.add_argument('--savePath',     type=str, default="exps/exp1")
     # Data selection
     parser.add_argument('--evalDataType', type=str, default="val", help='Only for AVA, to choose the dataset for evaluation, val or test')
     # For download dataset only, for evaluation only
     parser.add_argument('--downloadAVA',     dest='downloadAVA', action='store_true', help='Only download AVA dataset and do related preprocess')
     parser.add_argument('--evaluation',      dest='evaluation', action='store_true', help='Only do evaluation by using pretrained model [pretrain_AVA_CVPR.model]')
+    parser.add_argument('--fixed_input_length',     type=int,   default=0,    help='Length of clips in frames in training data')
+
     args = parser.parse_args()
-    # Data loader
+
+
+    # Training on fixed input length
+    args.fixed_input_length = 25
+
     args = init_args(args)
 
     if args.downloadAVA == True:
         preprocess_AVA(args)
         quit()
-
+        
+    # Data loader
     loader = train_loader(trialFileName = args.trainTrialAVA, \
                           audioPath      = os.path.join(args.audioPathAVA , 'train'), \
                           visualPath     = os.path.join(args.visualPathAVA, 'train'), \
@@ -70,11 +77,11 @@ def main():
         loss, lr = s.train_network(epoch = epoch, loader = trainLoader, **vars(args))
         
         if epoch % args.testInterval == 0:        
-            s.saveParameters(args.modelSavePath + "/model_%04d.model"%epoch)
-            mAPs.append(s.evaluate_network(epoch = epoch, loader = valLoader, **vars(args)))
-            print(time.strftime("%Y-%m-%d %H:%M:%S"), "%d epoch, mAP %2.2f%%, bestmAP %2.2f%%"%(epoch, mAPs[-1], max(mAPs)))
-            scoreFile.write("%d epoch, LR %f, LOSS %f, mAP %2.2f%%, bestmAP %2.2f%%\n"%(epoch, lr, loss, mAPs[-1], max(mAPs)))
-            scoreFile.flush()
+            s.saveParameters(args.modelSavePath + "/model_%04d.model"%epoch, epoch, loss)
+            # mAPs.append(s.evaluate_network(epoch = epoch, loader = valLoader, **vars(args)))
+            # print(time.strftime("%Y-%m-%d %H:%M:%S"), "%d epoch, mAP %2.2f%%, bestmAP %2.2f%%"%(epoch, mAPs[-1], max(mAPs)))
+            # scoreFile.write("%d epoch, LR %f, LOSS %f, mAP %2.2f%%, bestmAP %2.2f%%\n"%(epoch, lr, loss, mAPs[-1], max(mAPs)))
+            # scoreFile.flush()
 
         if epoch >= args.maxEpoch:
             quit()

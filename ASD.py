@@ -17,7 +17,9 @@ class ASD(nn.Module):
         self.optim = torch.optim.Adam(self.parameters(), lr = lr)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optim, step_size = 1, gamma=lrDecay)
         print(time.strftime("%m-%d %H:%M:%S") + " Model para number = %.2f"%(sum(param.numel() for param in self.model.parameters()) / 1000 / 1000))
-
+        if 'fixed_input_length' in kwargs:
+            self.fixed_input_length = kwargs['fixed_input_length']
+            
     def train_network(self, loader, epoch, **kwargs):
         self.train()
         self.scheduler.step(epoch - 1)  # StepLR
@@ -26,14 +28,33 @@ class ASD(nn.Module):
         r = 1.3 - 0.02 * (epoch - 1)
         for num, (audioFeature, visualFeature, labels) in enumerate(loader, start=1):
             self.zero_grad()
-
+            if visualFeature.size(dim=1) == 0:
+            # print('audioFeature.shape, visualFeature.shape:', audioFeature.shape, visualFeature.shape, labels.shape)
+                print(f'{num} skipped because videoFeature size is 0')
+                continue
+            if audioFeature.size(dim=1) == 0:
+            # print('audioFeature.shape, visualFeature.shape:', audioFeature.shape, visualFeature.shape, labels.shape)
+                print(f'{num} skipped because audioFeature size is 0')
+                continue
             audioEmbed = self.model.forward_audio_frontend(audioFeature[0].cuda())
             visualEmbed = self.model.forward_visual_frontend(visualFeature[0].cuda())
 
             outsAV= self.model.forward_audio_visual_backend(audioEmbed, visualEmbed)  
             outsV = self.model.forward_visual_backend(visualEmbed)
 
-            labels = labels[0].reshape((-1)).cuda() # Loss
+            if self.fixed_input_length != 0:
+                labels = labels[0][:, -5:]
+                num_clips, frames_per_clip = labels.shape
+                labels = labels.reshape((-1)).cuda() # Loss
+
+                slice_index = torch.arange(20, 25).cuda()
+                for i in range(1, num_clips):
+                    slice_index = torch.hstack((slice_index, torch.arange((i+1)*25-5, (i+1)*25).cuda()))
+                outsAV = torch.index_select(outsAV, 0, slice_index)
+                outsV = torch.index_select(outsV, 0, slice_index)
+            else:
+                labels = labels[0].reshape((-1)).cuda() # Loss
+
             nlossAV, _, _, prec = self.lossAV.forward(outsAV, labels, r)
             nlossV = self.lossV.forward(outsV, labels, r)
             nloss = nlossAV + 0.5 * nlossV
@@ -81,14 +102,19 @@ class ASD(nn.Module):
         mAP = float(str(subprocess.run(cmd, shell=True, stdout=PIPE, stderr=PIPE).stdout).split(' ')[2][:5])
         return mAP
 
-    def saveParameters(self, path):
-        torch.save(self.state_dict(), path)
-
+    def saveParameters(self, path, epoch, loss):
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': self.state_dict(),
+            'optimizer_state_dict': self.optim.state_dict(),
+            'loss': loss,
+            }, path)
+        
     def loadParameters(self, path):
         selfState = self.state_dict()
-        loadedState = torch.load(path)
+        loadedState = torch.load(path)['model_state_dict']
         for name, param in loadedState.items():
-            origName = name;
+            origName = name
             if name not in selfState:
                 name = name.replace("module.", "")
                 if name not in selfState:

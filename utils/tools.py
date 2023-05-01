@@ -35,25 +35,25 @@ def preprocess_AVA(args):
     # The AVA dataset will be saved in 'AVApath' folder like the following format:
     # ```
     # ├── clips_audios  (The audio clips cut from the original movies)
-    # │   ├── test
-    # │   ├── train
-    # │   └── val
+    # │   ├── test
+    # │   ├── train
+    # │   └── val
     # ├── clips_videos (The face clips cut from the original movies, be save in the image format, frame-by-frame)
-    # │   ├── test
-    # │   ├── train
-    # │   └── val
+    # │   ├── test
+    # │   ├── train
+    # │   └── val
     # ├── csv
-    # │   ├── test_file_list.txt (name of the test videos)
-    # │   ├── test_loader.csv (The csv file we generated to load data for testing)
-    # │   ├── test_orig.csv (The combination of the given test csv files)
-    # │   ├── train_loader.csv (The csv file we generated to load data for training)
-    # │   ├── train_orig.csv (The combination of the given training csv files)
-    # │   ├── trainval_file_list.txt (name of the train/val videos)
-    # │   ├── val_loader.csv (The csv file we generated to load data for validation)
-    # │   └── val_orig.csv (The combination of the given validation csv files)
+    # │   ├── test_file_list.txt (name of the test videos)
+    # │   ├── test_loader.csv (The csv file we generated to load data for testing)
+    # │   ├── test_orig.csv (The combination of the given test csv files)
+    # │   ├── train_loader.csv (The csv file we generated to load data for training)
+    # │   ├── train_orig.csv (The combination of the given training csv files)
+    # │   ├── trainval_file_list.txt (name of the train/val videos)
+    # │   ├── val_loader.csv (The csv file we generated to load data for validation)
+    # │   └── val_orig.csv (The combination of the given validation csv files)
     # ├── orig_audios (The original audios from the movies)
-    # │   ├── test
-    # │   └── trainval
+    # │   ├── test
+    # │   └── trainval
     # └── orig_videos (The original movies)
     #     ├── test
     #     └── trainval
